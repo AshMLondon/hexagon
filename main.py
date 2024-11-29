@@ -3,8 +3,19 @@
 #All rows must add up to 38
 
 #original completely brute force solver needs 444k iterations and takes 3.1s (PyPy)
+
 #slightly improved - only check rows changed, and memo-ise = 1.49s but still 444k iterations
-#complete thing -- 167,752,199 iters  474.4268388748169 seconds
+#[complete thing -- 167,752,199 iters  474 seconds]
+
+#checking ahead for 1 gap -- 20,153 iters  0.3982570171356201 seconds
+#[for complete solutions - 3,707,730  , 39.4 seconds
+
+#pick next_cell_to_try looking for rows with least blanks
+#1,151 iterations,  0.16 seconds
+#All solutions -- 390,766 iters,  7.5 seconds
+
+
+
 
 
 import time
@@ -24,8 +35,7 @@ class HexPuzzle:
         self.iterate_count=0
         self.memo={}
 
-        self.all_solutions=False
-
+        self.all_solutions=True
 
 
     # def _create_rows(self):
@@ -110,17 +120,37 @@ class HexPuzzle:
 
         self.iterate_count+=1
 
+        live_cell=self.next_cell_to_try()
+
         for num in range(1,20):  #needs to start with 1 here, actual numbers to add, not addressing
             if num not in self.cells:
-                self.cells[level]=num
-                if self.check_changed_rows_valid(level):
+                self.cells[live_cell]=num
+                if self.check_changed_rows_valid(live_cell):
                     result=self.recurse(level+1)
                     if result:
                         return True
                     #otherwise, number didn't work
-        self.cells[level]="."
+        self.cells[live_cell]="."
         return False #got to end of numbers
 
+
+    def next_cell_to_try(self):
+        #return self.cells.index(".")
+
+        min_blanks=6 #lowest (non-zero) number of blanks in a row
+
+
+        for check_row_set in self.check_rows:
+            for row in check_row_set:
+                nums_in_row=[self.cells[c] for c in row]
+                count=nums_in_row.count(".")
+                if count>0 and count<min_blanks:
+                    target_pos=nums_in_row.index(".")
+                    target_cell=row[target_pos]
+                    min_blanks=count
+
+        #print("target cell: ", target_cell, "value",self.cells[target_cell], "min_blanks", min_blanks)
+        return target_cell
 
 
 
