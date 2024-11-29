@@ -24,7 +24,7 @@ class HexPuzzle:
         self.iterate_count=0
         self.memo={}
 
-        self.all_solutions=FalseCah
+        self.all_solutions=False
 
 
 
@@ -67,6 +67,13 @@ class HexPuzzle:
             if "." not in nums_in_row:
                 if sum(nums_in_row)!=38:
                     return False
+            if nums_in_row.count(".")==1:
+                #there's just one missing gap, so see what the logical answer is for that gap
+                needed=38-sum([n for n in nums_in_row if n!="."])
+                if needed<1 or needed>19 or needed in self.cells:
+                    return False
+                    #needs to be within 1-19 range and not already used in the puzzle
+
         #otherwise...
         return True
 
@@ -98,7 +105,7 @@ class HexPuzzle:
             else:
                 return True
 
-        # print("Level",level)
+        # print("Level",level, "IC",self.iterate_count)
         # self.display()
 
         self.iterate_count+=1
