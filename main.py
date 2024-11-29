@@ -2,6 +2,10 @@
 #Solves wooden puzzle - hexagon with 19 tiles, numbered 1-19
 #All rows must add up to 38
 
+#original completely brute force solver needs 444k iterations and takes 3.1s (PyPy)
+#slightly improved - only check rows changed, and memo-ise = 1.49s but still 444k iterations
+
+
 import time
 
 class HexPuzzle:
@@ -17,6 +21,7 @@ class HexPuzzle:
         self.check_rows=check_rows
 
         self.iterate_count=0
+        self.memo={}
 
 
 
@@ -41,7 +46,26 @@ class HexPuzzle:
                         return False
         return True
 
+    def check_changed_rows_valid(self,cell):
+        #here just check the 3 rows (different directions) that contain the cell (reference) number
+        #first check if the specific rows already saved in a memo
+        rows_to_check=self.memo.get(cell)
+        if not rows_to_check:
+            rows_to_check=[]
+            for check_row_set in self.check_rows:
+                for row in check_row_set:
+                    if cell in row:
+                        rows_to_check.append(row)
+            self.memo[cell]=rows_to_check
+            #save in memo for next time
 
+        for row in rows_to_check:
+            nums_in_row=[self.cells[c] for c in row]
+            if "." not in nums_in_row:
+                if sum(nums_in_row)!=38:
+                    return False
+        #otherwise...
+        return True
 
 
 
@@ -73,7 +97,7 @@ class HexPuzzle:
         for num in range(1,20):  #needs to start with 1 here, actual numbers to add, not addressing
             if num not in self.cells:
                 self.cells[level]=num
-                if self.check_puzzle_valid():
+                if self.check_changed_rows_valid(level):
                     result=self.recurse(level+1)
                     if result:
                         return True
@@ -100,6 +124,7 @@ if __name__ == '__main__':
     print(time.time()-start_time,"seconds")
     hex.display()
     print(hex.check_puzzle_valid())
+    print(hex.memo)
 
 
 
