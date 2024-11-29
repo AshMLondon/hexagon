@@ -4,6 +4,7 @@
 
 #original completely brute force solver needs 444k iterations and takes 3.1s (PyPy)
 #slightly improved - only check rows changed, and memo-ise = 1.49s but still 444k iterations
+#complete thing -- 167,752,199 iters  474.4268388748169 seconds
 
 
 import time
@@ -22,6 +23,8 @@ class HexPuzzle:
 
         self.iterate_count=0
         self.memo={}
+
+        self.all_solutions=FalseCah
 
 
 
@@ -88,7 +91,13 @@ class HexPuzzle:
     def recurse(self,level):
 
         if level==19:
-            return True
+            if self.all_solutions:
+                print("SOLUTION FOUND")
+                self.display()
+                return False
+            else:
+                return True
+
         # print("Level",level)
         # self.display()
 
