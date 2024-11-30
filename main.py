@@ -4,7 +4,7 @@
 
 #original completely brute force solver needs 444k iterations and takes 3.1s (PyPy)
 
-#slightly improved - only check rows changed, and memo-ise = 1.49s but still 444k iterations
+#slightly improved - only check rows changed, and memo_rows-ise = 1.49s but still 444k iterations
 #[complete thing - finding all solutions -- 167,752,199 iters  474 seconds]
 
 #checking ahead for only 1 gap, and checking a legit number can fit -- 20,153 iters  0.3982570171356201 seconds
@@ -18,6 +18,9 @@
 #pick next cell quicker -  based on row with fewest blanks from just rows containing last changed cell
 #Just one - 11,176, 0.39 seconds
 #ALL 265,736, 3.8 seconds
+
+#pairs checker - if only a pair left, check valid combo pairs exist (and not used)
+#ALL 142,012, 3.1 seconds
 
 
 
@@ -36,7 +39,8 @@ class HexPuzzle:
         self.check_rows=check_rows
 
         self.iterate_count=0
-        self.memo={}
+        self.memo_rows={}
+        self.memo_pairs={}
 
         self.all_solutions=True
 
@@ -81,22 +85,34 @@ class HexPuzzle:
                 needed = 38 - sum([n for n in nums_in_row if n != "."])
                 if needed<3:
                     return False
+                pairs=self.get_pairs(needed)
+                found=False
+                for pair in pairs:
+                    if pair[0] not in self.cells and pair[1] not in self.cells:
+                        found=True
+                        break
+                if not found:
+                    #print("!!Pairs!!!!!!!!")
+                    return False
 
         #otherwise...
         return True
 
     def rows_with_this_cell(self, cell):
-        # first check if the specific rows already saved in a memo
-        rows_to_check = self.memo.get(cell)
+        # first check if the specific rows already saved in a memo_rows
+        rows_to_check = self.memo_rows.get(cell)
         if not rows_to_check:
             rows_to_check = []
             for check_row_set in self.check_rows:
                 for row in check_row_set:
                     if cell in row:
                         rows_to_check.append(row)
-            self.memo[cell] = rows_to_check
-            # save in memo for next time
+            self.memo_rows[cell] = rows_to_check
+            # save in memo_rows for next time
         return rows_to_check
+
+
+
 
     def display(self):
         cell=0
@@ -205,23 +221,35 @@ class HexPuzzle:
         # print("target cell: ", target_cell, "value",self.cells[target_cell], "min_blanks", min_blanks)
         return target_cell
 
+    def get_pairs(self,number):
+        pairs=self.memo_pairs.get(number)
+        if not pairs:
+            pairs=[]
+            for n in range(1,round(number/2)+1):
+                m=number-n
+                if m<=19 and n!=m:
+                    pairs.append((n,m))
+            self.memo_pairs[number]=pairs
+        return pairs
+
+
+
 
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     hex=HexPuzzle()
-    hex.display()
-    print(hex.check_puzzle_valid())
 
     start_time=time.time()
     result=hex.recurse2(0)
     print(result)
     print(f"{hex.iterate_count:,}")
     print(time.time()-start_time,"seconds")
-    hex.display()
+    if hex.all_solutions:
+        hex.display()
     print(hex.check_puzzle_valid())
-    # print(hex.memo)
+
 
 
 
