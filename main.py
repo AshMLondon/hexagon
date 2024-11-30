@@ -5,16 +5,19 @@
 #original completely brute force solver needs 444k iterations and takes 3.1s (PyPy)
 
 #slightly improved - only check rows changed, and memo-ise = 1.49s but still 444k iterations
-#[complete thing -- 167,752,199 iters  474 seconds]
+#[complete thing - finding all solutions -- 167,752,199 iters  474 seconds]
 
-#checking ahead for 1 gap -- 20,153 iters  0.3982570171356201 seconds
+#checking ahead for only 1 gap, and checking a legit number can fit -- 20,153 iters  0.3982570171356201 seconds
 #[for complete solutions - 3,707,730  , 39.4 seconds
 
-#pick next_cell_to_try looking for rows with least blanks
+#pick next_cell_to_try - choosing  cell in row with least blanks
 #1,151 iterations,  0.16 seconds
 #All solutions -- 390,766 iters,  7.5 seconds
 
-
+#V2 recursion - tell function which cell to do
+#pick next cell quicker -  based on row with fewest blanks from just rows containing last changed cell
+#Just one - 11,176, 0.39 seconds
+#ALL 265,736, 3.8 seconds
 
 
 
@@ -61,16 +64,7 @@ class HexPuzzle:
 
     def check_changed_rows_valid(self,cell):
         #here just check the 3 rows (different directions) that contain the cell (reference) number
-        #first check if the specific rows already saved in a memo
-        rows_to_check=self.memo.get(cell)
-        if not rows_to_check:
-            rows_to_check=[]
-            for check_row_set in self.check_rows:
-                for row in check_row_set:
-                    if cell in row:
-                        rows_to_check.append(row)
-            self.memo[cell]=rows_to_check
-            #save in memo for next time
+        rows_to_check = self.rows_with_this_cell(cell)
 
         for row in rows_to_check:
             nums_in_row=[self.cells[c] for c in row]
@@ -83,11 +77,26 @@ class HexPuzzle:
                 if needed<1 or needed>19 or needed in self.cells:
                     return False
                     #needs to be within 1-19 range and not already used in the puzzle
+            elif nums_in_row.count(".")==2:
+                needed = 38 - sum([n for n in nums_in_row if n != "."])
+                if needed<3:
+                    return False
 
         #otherwise...
         return True
 
-
+    def rows_with_this_cell(self, cell):
+        # first check if the specific rows already saved in a memo
+        rows_to_check = self.memo.get(cell)
+        if not rows_to_check:
+            rows_to_check = []
+            for check_row_set in self.check_rows:
+                for row in check_row_set:
+                    if cell in row:
+                        rows_to_check.append(row)
+            self.memo[cell] = rows_to_check
+            # save in memo for next time
+        return rows_to_check
 
     def display(self):
         cell=0
@@ -134,11 +143,39 @@ class HexPuzzle:
         return False #got to end of numbers
 
 
+    def recurse2(self,live_cell):
+
+        self.iterate_count+=1
+
+
+
+        for num in range(1,20):  #needs to start with 1 here, actual numbers to add, not addressing
+            if num not in self.cells:
+                self.cells[live_cell]=num
+                if self.check_changed_rows_valid(live_cell):
+                    if "." not in self.cells:
+
+                        if self.all_solutions:
+                            print("SOLUTION FOUND")
+                            self.display()
+                        else:
+                            return True
+
+
+                    else:
+
+                        next_cell = self.next_cell_to_try_quicker(live_cell)
+                        # print("next",next_cell)
+                        result=self.recurse2(next_cell)
+                        if result:
+                            return True
+                        #otherwise, number didn't work
+        self.cells[live_cell]="."
+        return False #got to end of numbers
+
+
     def next_cell_to_try(self):
-        #return self.cells.index(".")
-
         min_blanks=6 #lowest (non-zero) number of blanks in a row
-
 
         for check_row_set in self.check_rows:
             for row in check_row_set:
@@ -152,7 +189,21 @@ class HexPuzzle:
         #print("target cell: ", target_cell, "value",self.cells[target_cell], "min_blanks", min_blanks)
         return target_cell
 
+    def next_cell_to_try_quicker(self,this_cell):
+        min_blanks = 6  # lowest (non-zero) number of blanks in a row
 
+        rows_to_check=self.rows_with_this_cell(this_cell)
+
+        for row in rows_to_check:
+            nums_in_row = [self.cells[c] for c in row]
+            count = nums_in_row.count(".")
+            if count > 0 and count < min_blanks:
+                target_pos = nums_in_row.index(".")
+                target_cell = row[target_pos]
+                min_blanks = count
+
+        # print("target cell: ", target_cell, "value",self.cells[target_cell], "min_blanks", min_blanks)
+        return target_cell
 
 
 
@@ -164,13 +215,13 @@ if __name__ == '__main__':
     print(hex.check_puzzle_valid())
 
     start_time=time.time()
-    result=hex.recurse(0)
+    result=hex.recurse2(0)
     print(result)
     print(f"{hex.iterate_count:,}")
     print(time.time()-start_time,"seconds")
     hex.display()
     print(hex.check_puzzle_valid())
-    print(hex.memo)
+    # print(hex.memo)
 
 
 
